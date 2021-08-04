@@ -37,8 +37,6 @@ func readBucket(bucket *bbolt.Bucket, currentTreeNode *TreeNode) error {
 }
 
 func (l Loader) LoadTree() error {
-	var err error
-
 	tx, err := l.db.Begin(false)
 	if err != nil {
 		return err
@@ -46,7 +44,6 @@ func (l Loader) LoadTree() error {
 	defer tx.Rollback()
 
 	rootHAMTContainer, err := hamtcontainer.NewHAMTBuilder().Key([]byte(rootNodeKey)).Build()
-
 	if err != nil {
 		return err
 	}
@@ -61,8 +58,7 @@ func (l Loader) LoadTree() error {
 			return err
 		}
 
-		err = readBucket(nestedBucket, l.rootTreeNode.AddChild(nestedHAMTContainer))
-		if err != nil {
+		if err := readBucket(nestedBucket, l.rootTreeNode.AddChild(nestedHAMTContainer)); err != nil {
 			return err
 		}
 	}
