@@ -8,13 +8,14 @@ import (
 const rootNodeKey = "root"
 
 type Loader struct {
-	db              *bbolt.DB
-	topLevelBuckets []string
-	rootTreeNode    *TreeNode
+	db                *bbolt.DB
+	topLevelBuckets   []string
+	rootTreeNode      *TreeNode
+	rootHAMTContainer *hamtcontainer.HAMTContainer
 }
 
 func NewLoader(db *bbolt.DB, topLevelBuckets []string) Loader {
-	return Loader{db, topLevelBuckets, nil}
+	return Loader{db, topLevelBuckets, nil, nil}
 }
 
 func readBucket(bucket *bbolt.Bucket, currentTreeNode *TreeNode) error {
@@ -36,19 +37,27 @@ func readBucket(bucket *bbolt.Bucket, currentTreeNode *TreeNode) error {
 	})
 }
 
-func (l Loader) LoadTree() error {
+func (l Loader) GetRootTreeNode() *TreeNode {
+	return l.rootTreeNode
+}
+
+func (l Loader) GetRootHAMTContainer() *hamtcontainer.HAMTContainer {
+	return l.rootHAMTContainer
+}
+
+func (l *Loader) LoadTree() error {
 	tx, err := l.db.Begin(false)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	rootHAMTContainer, err := hamtcontainer.NewHAMTBuilder().Key([]byte(rootNodeKey)).Build()
+	l.rootHAMTContainer, err = hamtcontainer.NewHAMTBuilder().Key([]byte(rootNodeKey)).Build()
 	if err != nil {
 		return err
 	}
 
-	l.rootTreeNode = NewTreeNode(rootHAMTContainer, nil)
+	l.rootTreeNode = NewTreeNode(l.rootHAMTContainer, nil)
 
 	for _, topLevelBucket := range l.topLevelBuckets {
 		nestedBucket := tx.Bucket([]byte(topLevelBucket))
