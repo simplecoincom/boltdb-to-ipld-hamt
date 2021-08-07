@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"os"
 
+	ipfsApi "github.com/ipfs/go-ipfs-api"
 	boltdbtoipldhamt "github.com/simplecoincom/boltdb-to-ipld-hamt"
+	"github.com/simplecoincom/go-ipld-adl-hamt-container/storage"
 	bolt "go.etcd.io/bbolt"
 )
 
@@ -23,8 +25,6 @@ func main() {
 
 	argsWithoutProg := os.Args[1:]
 	path := argsWithoutProg[0]
-	output := argsWithoutProg[1]
-	// path := "/Users/eduardo/.polar/networks/1/volumes/lnd/alice/data/graph/regtest/channel.db"
 
 	db, err := bolt.Open(path, 0666, nil)
 	if err != nil {
@@ -32,7 +32,9 @@ func main() {
 	}
 	defer db.Close()
 
-	loader := boltdbtoipldhamt.NewLoader(db, topLevelBuckets)
+	ipfsShell := ipfsApi.NewShell("http://localhost:5001")
+	storage := storage.NewIPFSStorage(ipfsShell)
+	loader := boltdbtoipldhamt.NewLoader(db, storage, topLevelBuckets)
 
 	if err := loader.LoadTree(); err != nil {
 		panic(err)
@@ -44,18 +46,13 @@ func main() {
 		}
 	}
 
-	f, err := os.Create(output)
-	if err != nil {
-		panic(err)
-	}
-
 	if err := loader.GetRootHAMTContainer().MustBuild(); err != nil {
 		panic(err)
 	}
 
-	if err := loader.GetRootHAMTContainer().WriteCar(f); err != nil {
+	lnk, err := loader.GetRootHAMTContainer().GetLink()
+	if err != nil {
 		panic(err)
 	}
-
-	// fmt.Printf("%+v\n", loader)
+	fmt.Println("Link", lnk)
 }
