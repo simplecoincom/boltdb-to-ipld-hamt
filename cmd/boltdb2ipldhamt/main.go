@@ -18,7 +18,7 @@ var topLevelBuckets = []string{
 }
 
 func main() {
-	if len(os.Args) < 3 {
+	if len(os.Args) < 2 {
 		fmt.Println("Please inform the boltdb path")
 		return
 	}
