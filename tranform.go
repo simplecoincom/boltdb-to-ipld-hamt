@@ -6,7 +6,7 @@ import (
 	hamtcontainer "github.com/simplecoincom/go-ipld-adl-hamt-container"
 )
 
-func buildNode(treeNode *TreeNode) error {
+func BuildNode(treeNode *TreeNode) error {
 	hamtContainer := treeNode.Data.(*hamtcontainer.HAMTContainer)
 
 	if treeNode.Parent == nil {
@@ -15,19 +15,19 @@ func buildNode(treeNode *TreeNode) error {
 		for _, nestedTreeNode := range treeNode.Children {
 			nestedHAMTContainer := nestedTreeNode.Data.(*hamtcontainer.HAMTContainer)
 
+			if err := nestedHAMTContainer.MustBuild(); err != nil {
+				return err
+			}
+
 			link, err := nestedHAMTContainer.GetLink()
 			if err != nil {
 				return err
 			}
 
-			// log.Printf("Set container key %s for %s \n", nestedHAMTContainer.Key(), hamtContainer.Key())
-			hamtContainer.MustBuild(func(hamtSetter hamtcontainer.HAMTSetter) error {
-				return hamtSetter.Set(nestedHAMTContainer.Key(), link)
-			})
+			hamtContainer.Set(nestedHAMTContainer.Key(), link)
 		}
 
-		// log.Printf("prepare to build root hamt %s\n", hamtContainer.Key())
-		return nil
+		return hamtContainer.MustBuild()
 	}
 
 	if treeNode.Parent != nil && len(treeNode.Children) > 0 {
@@ -36,16 +36,16 @@ func buildNode(treeNode *TreeNode) error {
 		for _, nestedTreeNode := range treeNode.Children {
 			nestedHAMTContainer := nestedTreeNode.Data.(*hamtcontainer.HAMTContainer)
 
+			if err := nestedHAMTContainer.MustBuild(); err != nil {
+				return err
+			}
+
 			link, err := nestedHAMTContainer.GetLink()
 			if err != nil {
 				return err
 			}
 
-			if err := nestedHAMTContainer.MustBuild(func(hamtSetter hamtcontainer.HAMTSetter) error {
-				return hamtSetter.Set(nestedHAMTContainer.Key(), link)
-			}); err != nil {
-				return err
-			}
+			hamtContainer.Set(nestedHAMTContainer.Key(), link)
 		}
 
 		return nil
