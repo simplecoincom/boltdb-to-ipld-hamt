@@ -24,15 +24,17 @@ func main() {
 	}
 
 	argsWithoutProg := os.Args[1:]
-	path := argsWithoutProg[0]
+	dbPath := argsWithoutProg[0]
+	ipfsIP := argsWithoutProg[1]
 
-	db, err := bolt.Open(path, 0666, nil)
+	db, err := bolt.Open(dbPath, 0666, nil)
 	if err != nil {
 		panic(err)
 	}
 	defer db.Close()
 
-	ipfsShell := ipfsApi.NewShell("http://localhost:5001")
+	// "http://localhost:5001"
+	ipfsShell := ipfsApi.NewShell(ipfsIP)
 	storage := storage.NewIPFSStorage(ipfsShell)
 	loader := boltdbtoipldhamt.NewLoader(db, storage, topLevelBuckets)
 
